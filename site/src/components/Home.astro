@@ -1,0 +1,710 @@
+---
+import { STRINGS, LANGS, NATIVE, LOCALE, pagePath, type Lang } from '../i18n';
+import { repo, artcraft, release, fill } from '../lib/release';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = STRINGS[lang];
+const { releasePage, zipUrl, version, hub, full, downloads } = await release();
+const main = hub || full;
+const unit = lang === 'fr' ? 'Mo' : 'MB';
+const label = version && main ? `v${version} · ${hub ? t.hero.hubWord : t.hero.zipWord} · ${main.mb} ${unit}` : t.hero.zipWord;
+const url = 'https://voidflare.app' + pagePath(lang, '');
+const privacyHref = pagePath(lang, 'privacy');
+const F = t.fmt;
+const upper = (s: string) => s.toLocaleUpperCase(lang);
+
+const apps = [
+  { tag: 'DOC', color: '#4c8bf5', name: 'Word to PDF', text: t.apps.text[0] },
+  { tag: 'XLS', color: '#34a86e', name: 'Excel to PDF', text: t.apps.text[1] },
+  { tag: 'PPT', color: '#e87e3e', name: 'Slides to PDF', text: t.apps.text[2] },
+  { tag: 'PDF', color: '#e25252', name: 'PDF Tools', text: t.apps.text[3] },
+  { tag: 'DWG', color: '#26b2be', name: 'DWG to PDF', text: t.apps.text[4] },
+  { tag: 'IMG', color: '#a06be0', name: 'Image Converter', text: t.apps.text[5] },
+  { tag: 'AUD', color: '#d9a43a', name: 'Audio Converter', text: t.apps.text[6] },
+  { tag: 'VID', color: '#e0609a', name: 'Video Converter', text: t.apps.text[7] },
+  { tag: 'EPUB', color: '#7a8cf0', name: 'E-book Converter', text: t.apps.text[8] },
+];
+
+// What each file type can become (the hub's route table, in short).
+const word = { to: [F.pdf, 'EPUB'], app: 'Word to PDF', more: t.more.std };
+const image = (from: string[]) => ({ to: ['PNG', 'JPG', 'WebP', 'TIFF', 'BMP', 'GIF', 'ICO'].filter((x) => !from.includes(x)), app: 'Image Converter', more: '' });
+const audio = (from: string[]) => ({ to: ['WAV', 'FLAC', 'AIFF'].filter((x) => !from.includes(x)), app: 'Audio Converter', more: '' });
+const video = { to: ['MP4 (H.264)', 'MOV (ProRes)', 'GIF', 'WAV'], app: 'Video Converter', more: '' };
+const book = { to: ['EPUB', 'TXT', 'HTML', 'PDF', 'DOCX'], app: 'E-book Converter', more: '' };
+const sheet = { to: [F.pdf], app: 'Excel to PDF', more: t.more.std };
+const finder = {
+  docx: word, doc: word, rtf: word, odt: word,
+  xlsx: sheet, csv: sheet, tsv: sheet,
+  pptx: { to: [F.pdf], app: 'Slides to PDF', more: t.more.slides },
+  pdf: { to: [F.word, F.ppt, F.html, F.rtf, F.txt, F.png, F.jpg], app: 'PDF Tools', more: t.more.pdf },
+  dwg: { to: [F.dwgSheets, F.dwgWhole], app: 'DWG to PDF', more: t.more.dwg },
+  epub: { ...book, to: ['TXT', 'HTML', 'PDF', 'DOCX'] },
+  azw3: book, mobi: book,
+  png: image(['PNG']), jpg: image(['JPG']), webp: image(['WebP']),
+  wav: audio(['WAV']), flac: audio(['FLAC']), mp3: audio([]),
+  mp4: { ...video, to: ['MOV (ProRes)', 'GIF', 'WAV'] }, mov: { ...video, to: ['MP4 (H.264)', 'GIF', 'WAV'] }, mkv: video,
+};
+const exts = Object.keys(finder);
+const vars = { privacy: privacyHref };
+---
+<!doctype html>
+<html lang={lang} data-auto={lang === 'en' ? '' : undefined} data-page="">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline src="/lang.js"></script>
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.desc} />
+    <meta name="theme-color" content="#121316" />
+    <link rel="canonical" href={url} />
+    {LANGS.map((l) => <link rel="alternate" hreflang={l} href={'https://voidflare.app' + pagePath(l, '')} />)}
+    <link rel="alternate" hreflang="x-default" href="https://voidflare.app/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Link previews (WhatsApp, Telegram, Slack, X...): an absolute image URL of 1200x630. Raise ?v= after changing og.jpg, because chat apps cache it. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="voidflare" />
+    <meta property="og:locale" content={LOCALE[lang]} />
+    {LANGS.filter((l) => l !== lang).map((l) => <meta property="og:locale:alternate" content={LOCALE[l]} />)}
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.og} />
+    <meta property="og:url" content={url} />
+    <meta property="og:image" content="https://voidflare.app/og.jpg?v=2" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={t.meta.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={t.meta.title} />
+    <meta name="twitter:description" content={t.meta.tw} />
+    <meta name="twitter:image" content="https://voidflare.app/og.jpg?v=2" />
+    <link rel="preload" href="/fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'voidflare',
+      url,
+      inLanguage: lang,
+      description: t.meta.ld,
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'Windows 10, Windows 11',
+      license: 'https://github.com/Flaeren/voidflare/blob/main/LICENSE-MIT',
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+      codeRepository: repo,
+      author: { '@type': 'Person', name: 'Gabriele Denaro', url: 'https://gabrieledenaro.com', sameAs: ['https://github.com/Flaeren'] },
+      sameAs: [repo],
+      ...(version ? { softwareVersion: version, downloadUrl: zipUrl } : {}),
+    })} />
+  </head>
+  <body>
+    <canvas id="fx" aria-hidden="true"></canvas>
+    <canvas id="ember" aria-hidden="true"></canvas>
+
+    <header class="bar">
+      <div class="wrap bar-in">
+        <a class="brand" href="#top">
+          <svg width="26" height="39" viewBox="19 3 64 96" aria-hidden="true"><path d="M50 98C31 98 20 85 22 69C24 55 34 47 38 35C40 27 38 16 43 4C49 15 58 22 61 34C62 40 61 45 64 49C68 43 68 37 66 30C78 43 82 58 80 71C78 87 67 98 50 98Z" fill="#6366f1" /><path d="M50 92C40 92 33 85 34 76C35 68 41 63 44 54C46 59 49 61 51 59C50 51 54 45 58 39C57 51 66 57 66 72C66 85 60 92 50 92Z" fill="#a5b4fc" transform="translate(7.5 13.8) scale(0.85)" /></svg>
+          <span class="word">voidflare</span>
+        </a>
+        <nav class="nav mono">
+          <a href="#finder">{t.nav.finder}</a><a href="#apps">{t.nav.apps}</a><a href="#offline">{t.nav.offline}</a><a href="#get">{t.nav.get}</a>
+          <a class="outline" href={repo}>{t.nav.github}</a>
+          <details class="lang" id="lang">
+            <summary aria-label={t.nav.lang}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5" /><ellipse cx="12" cy="12" rx="4" ry="9.5" /><path d="M2.5 12h19M4 7h16M4 17h16" /></svg>
+              <span>{lang.toUpperCase()}</span>
+            </summary>
+            <ul>
+              {LANGS.map((l) => (
+                <li><a href={pagePath(l, '')} lang={l} hreflang={l} data-lang={l} aria-current={l === lang ? 'true' : undefined}>{NATIVE[l]}</a></li>
+              ))}
+            </ul>
+          </details>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="wrap hero">
+        <div class="art">
+          <span class="glow" aria-hidden="true"></span>
+          <svg class="bigflame" width="130" height="195" viewBox="19 3 64 96" aria-hidden="true"><path d="M50 98C31 98 20 85 22 69C24 55 34 47 38 35C40 27 38 16 43 4C49 15 58 22 61 34C62 40 61 45 64 49C68 43 68 37 66 30C78 43 82 58 80 71C78 87 67 98 50 98Z" fill="#6366f1" /><path d="M50 92C40 92 33 85 34 76C35 68 41 63 44 54C46 59 49 61 51 59C50 51 54 45 58 39C57 51 66 57 66 72C66 85 60 92 50 92Z" fill="#a5b4fc" transform="translate(7.5 13.8) scale(0.85)" /></svg>
+          <div class="txt"><span class="aword">voidflare</span><span class="atag">Craft your conversion, always offline.</span></div>
+        </div>
+        <p class="eyebrow mono">{t.hero.eyebrow}</p>
+        <h1>{t.hero.h1[0]}<br />{t.hero.h1[1]}<br /><span>{t.hero.h1[2]}</span></h1>
+        <p class="lead">{t.hero.lead}</p>
+        <div class="cta">
+          <a class="btn solid mono" href="#get">{t.hero.dl}</a>
+          <a class="btn ghost mono" href={repo}>{t.hero.gh}</a>
+          <span class="meta mono">{label}</span>
+        </div>
+
+        <div class="window card" aria-hidden="true">
+          <div class="window-bar mono"><i></i><i></i><i></i><span>voidflare.exe</span></div>
+          <div class="window-body">
+            <div class="drop">
+              <div class="tile">PDF</div>
+              <div class="drop-info">
+                <div class="file">report.pdf</div>
+                <div class="path mono">11.9 MB · C:\Users\you\Documents</div>
+                <div class="path mono to">{t.hero.convertTo}</div>
+                <div class="chips mono">{[F.word, F.ppt, F.html, F.rtf, F.txt, F.png, F.jpg].map((c) => <span>{upper(c)}</span>)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="finder" class="wrap section">
+        <h2>{t.finder.h2}</h2>
+        <p class="sub">{t.finder.sub}</p>
+        <div class="exts mono" role="group" aria-label={t.finder.aria}>
+          {exts.map((e, i) => (
+            <button type="button" class="ext" data-ext={e} aria-pressed={i === 0 ? 'true' : 'false'}>.{e.toUpperCase()}</button>
+          ))}
+        </div>
+        <div class="result card">
+          <div class="result-l">
+            <div class="label mono">{t.finder.picked}</div>
+            <div class="picked mono" id="picked">.DOCX</div>
+          </div>
+          <div class="result-r">
+            <div class="label mono">{t.finder.becomes}</div>
+            <div class="chips mono light" id="becomes"></div>
+            <p class="done" id="done" data-by={t.finder.doneBy}></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="apps" class="wrap section">
+        <div class="head">
+          <h2>{t.apps.h2}</h2>
+          <span class="mono faint">{t.apps.faint}</span>
+        </div>
+        <div class="grid">
+          {apps.map((a) => (
+            <article class="cell card">
+              <div class="badge mono" style={`--c:${a.color}`}>{a.tag}</div>
+              <h3>{a.name}</h3>
+              <p>{a.text}</p>
+            </article>
+          ))}
+          <article class="cell soon">
+            <div class="mono faint">{t.apps.soon}</div>
+            <p>{t.apps.soonText}</p>
+          </article>
+        </div>
+        <p class="note">{t.apps.langs}</p>
+      </section>
+
+      <section id="offline" class="band">
+        <div class="wrap band-in">
+          <h2>{t.offline.h2}</h2>
+          <ul>
+            {t.offline.items.map((x) => <li><span class="mono ok">✓</span>{x}</li>)}
+          </ul>
+        </div>
+      </section>
+
+      <section id="how" class="band">
+        <div class="wrap band-in">
+          <h2>{t.how.h2}</h2>
+          <div class="text">
+            <p set:html={fill(t.how.p1)} />
+            <p set:html={fill(t.how.p2)} />
+          </div>
+        </div>
+      </section>
+
+      <section id="safe" class="wrap section">
+        <h2>{t.safe.h2}</h2>
+        <p class="sub">{t.safe.sub}</p>
+        <ul class="checks">
+          {t.safe.items.map((x) => <li><span class="mono ok">✓</span><span set:html={fill(x)} /></li>)}
+          <li><span class="mono warn">!</span><span>{t.safe.warn}</span></li>
+        </ul>
+      </section>
+
+      <section id="get" class="wrap section">
+        <div class="get card">
+          <div>
+            <h2>{t.get.h2}</h2>
+            <p class="sub">{t.get.sub}{version ? ` · v${version}` : ''}</p>
+            {hub ? (
+              <>
+                <p class="small" set:html={fill(t.get.hubText)} />
+                <p class="small">{fill(t.get.noNet, { full: full ? `${full.mb} ${unit}` : t.get.larger })}</p>
+              </>
+            ) : (
+              <p class="small" set:html={fill(t.get.zipOnly)} />
+            )}
+            <p class="small" set:html={fill(t.get.smart)} />
+            <p class="small">{t.get.links}{main && main.sha ? t.get.check : ''}</p>
+            {hub && hub.sha && <p class="small sha mono">{t.get.hubSha} {hub.sha}</p>}
+            {full && full.sha && <p class="small sha mono">{t.get.fullSha} {full.sha}</p>}
+            {downloads > 0 && <p class="small mono">{fill(t.get.counter, { n: downloads.toLocaleString(lang) })}</p>}
+            <p class="small">
+              <a href={releasePage}>{t.get.release}</a> · <a href={repo}>{t.get.source}</a> · <a href={repo + '#build-from-source'}>{t.get.build}</a>
+            </p>
+            <p class="small"><a href={repo}>★ {t.get.star}</a></p>
+          </div>
+          <div class="platforms">
+            <div class="plat">
+              <div class="plat-label mono"><i class="dot ok-dot"></i>{t.get.winLabel}</div>
+              <div class="cta">
+                {hub ? (
+                  <>
+                    <a class="btn solid mono" href={hub.url}>{fill(t.get.btnHub, { mb: String(hub.mb) })}</a>
+                    {full && <a class="btn ghost mono" href={full.url}>{fill(t.get.btnFull, { mb: String(full.mb) })}</a>}
+                  </>
+                ) : (
+                  <a class="btn solid mono" href={zipUrl}>{t.get.btnZip}</a>
+                )}
+              </div>
+            </div>
+            <div class="plat soonp">
+              <div class="plat-label mono"><i class="dot"></i>{t.get.linuxLabel}</div>
+              <div class="cta">
+                <span class="btn ghost mono off" aria-disabled="true">{t.get.linuxBtn}</span>
+              </div>
+              <p class="small">{t.get.linuxNote}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-in mono">
+        {t.foot.map((x) => <span set:html={fill(x, vars)} />)}
+      </div>
+    </footer>
+
+    <div id="ctx" class="ctx mono" role="menu" aria-label="voidflare" hidden>
+      <a role="menuitem" href={zipUrl}>{t.ctx.dl}</a>
+      <a role="menuitem" href={repo}>{t.ctx.source}</a>
+      <a role="menuitem" href={privacyHref}>{t.ctx.privacy}</a>
+      <button type="button" role="menuitem" data-copy data-label={t.ctx.copy} data-copied={t.ctx.copied}>{t.ctx.copy}</button>
+    </div>
+
+    <script type="application/json" id="finder-data" set:html={JSON.stringify(finder)} />
+    <script>
+      const finder = JSON.parse(document.getElementById('finder-data').textContent);
+      const picked = document.getElementById('picked');
+      const becomes = document.getElementById('becomes');
+      const done = document.getElementById('done');
+      const buttons = Array.from(document.querySelectorAll('.ext'));
+      function show(ext) {
+        const info = finder[ext];
+        picked.textContent = '.' + ext.toUpperCase();
+        becomes.replaceChildren(...info.to.map((t) => Object.assign(document.createElement('span'), { textContent: t })));
+        const by = done.dataset.by.split('{app}');
+        done.replaceChildren(by[0], Object.assign(document.createElement('strong'), { textContent: info.app }), by[1] || '', info.more);
+        buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.ext === ext)));
+      }
+      buttons.forEach((b) => b.addEventListener('click', () => show(b.dataset.ext)));
+      show('docx');
+
+      // Language menu: closes when you click elsewhere or press Escape.
+      (function () {
+        const lang = document.getElementById('lang');
+        if (!lang) return;
+        document.addEventListener('pointerdown', (e) => { if (lang.open && !lang.contains(e.target)) lang.open = false; });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lang.open) { lang.open = false; lang.querySelector('summary').focus(); } });
+      })();
+
+      // Card spotlight: the pointer position inside each card.
+      document.querySelectorAll('.card').forEach((el) => {
+        el.addEventListener('pointermove', (ev) => {
+          const r = el.getBoundingClientRect();
+          el.style.setProperty('--mx', ev.clientX - r.left + 'px');
+          el.style.setProperty('--my', ev.clientY - r.top + 'px');
+        });
+      });
+
+      // Dot grid and torch (same idea and numbers as the app): dots swell and part around the pointer,
+      // a soft light follows it. Nothing runs while the pointer is still.
+      (function () {
+        const canvas = document.getElementById('fx');
+        const ctx = canvas.getContext('2d');
+        const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const coarse = matchMedia('(pointer: coarse)').matches;
+        const CELL = 26, REACH = 120, TORCH = 170, FOLLOW = 0.12;
+        let w = 0, h = 0, dpr = 1;
+        const target = { x: -1000, y: -1000 };
+        const pos = { x: -1000, y: -1000 };
+        let power = 0, want = 0, raf = 0;
+
+        function resize() {
+          dpr = Math.min(devicePixelRatio || 1, 2);
+          w = innerWidth; h = innerHeight;
+          canvas.width = w * dpr; canvas.height = h * dpr;
+          canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          draw();
+        }
+        function draw() {
+          ctx.clearRect(0, 0, w, h);
+          if (power > 0.01) {
+            const g = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, TORCH);
+            const a = 0.10 * power;
+            g.addColorStop(0, 'rgba(242,241,238,' + a + ')');
+            g.addColorStop(1, 'rgba(242,241,238,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(pos.x - TORCH, pos.y - TORCH, TORCH * 2, TORCH * 2);
+          }
+          for (let y = 0; y <= h + CELL; y += CELL) {
+            for (let x = 0; x <= w + CELL; x += CELL) {
+              const dx = x - pos.x, dy = y - pos.y, d = Math.hypot(dx, dy);
+              const k = Math.max(0, 1 - d / REACH) * power;
+              const px = k > 0 && d > 0 ? x + (dx / d) * k * 10 : x;
+              const py = k > 0 && d > 0 ? y + (dy / d) * k * 10 : y;
+              const s = 1 + k * 1.4;
+              ctx.fillStyle = 'rgba(242,241,238,' + (0.14 + k * 0.55) + ')';
+              ctx.fillRect(px - s / 2, py - s / 2, s, s);
+            }
+          }
+        }
+        function tick() {
+          raf = 0;
+          pos.x += (target.x - pos.x) * FOLLOW;
+          pos.y += (target.y - pos.y) * FOLLOW;
+          power += (want - power) * 0.15;
+          draw();
+          if (Math.hypot(target.x - pos.x, target.y - pos.y) > 0.5 || Math.abs(want - power) > 0.01) raf = requestAnimationFrame(tick);
+        }
+        function kick() { if (!raf) raf = requestAnimationFrame(tick); }
+        addEventListener('resize', resize);
+        resize();
+        if (still || coarse) return;
+        addEventListener('pointermove', (e) => {
+          if (power < 0.01 && want === 0) { pos.x = e.clientX; pos.y = e.clientY; }
+          target.x = e.clientX; target.y = e.clientY; want = 1; kick();
+        });
+        document.documentElement.addEventListener('pointerleave', () => { want = 0; kick(); });
+      })();
+
+      // Click embers: a ring and a few sparks where you click. The cursor itself stays the system one (so it
+      // never lags); this only decorates the click. Off for touch and reduced motion, and the loop stops as
+      // soon as the last spark has faded. (A trail behind the moving pointer was tried and removed.)
+      (function () {
+        if (matchMedia('(pointer: coarse)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const canvas = document.getElementById('ember');
+        const ctx = canvas.getContext('2d');
+        const MAX = 160;
+        const COLORS = [[99, 102, 241], [129, 140, 248], [165, 180, 252], [224, 231, 255]];
+        const sparks = [], rings = [];
+        let w = 0, h = 0, dpr = 1, raf = 0, last = 0;
+        const rand = (a, b) => a + Math.random() * (b - a);
+
+        function resize() {
+          dpr = Math.min(devicePixelRatio || 1, 2);
+          w = innerWidth; h = innerHeight;
+          canvas.width = w * dpr; canvas.height = h * dpr;
+          canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        function spark(x, y, vx, vy, life, size) {
+          if (sparks.length >= MAX) return;
+          sparks.push({ x, y, vx, vy, life, size, age: 0, c: COLORS[(Math.random() * COLORS.length) | 0] });
+        }
+        function tick(t) {
+          const dt = Math.min(48, t - last); last = t;
+          const k = dt / 16;
+          ctx.clearRect(0, 0, w, h);
+          ctx.globalCompositeOperation = 'lighter';
+          for (let i = sparks.length - 1; i >= 0; i--) {
+            const s = sparks[i];
+            s.age += dt;
+            if (s.age >= s.life) { sparks.splice(i, 1); continue; }
+            const f = s.age / s.life;
+            s.x += s.vx * k; s.y += s.vy * k;
+            s.vy -= 0.014 * k; s.vx *= 0.985; s.vy *= 0.99;
+            ctx.fillStyle = 'rgba(' + s.c[0] + ',' + s.c[1] + ',' + s.c[2] + ',' + ((1 - f) * (1 - f) * 0.95).toFixed(3) + ')';
+            ctx.beginPath(); ctx.arc(s.x, s.y, s.size * (1 - 0.55 * f), 0, 6.2832); ctx.fill();
+          }
+          for (let i = rings.length - 1; i >= 0; i--) {
+            const r = rings[i];
+            r.age += dt;
+            if (r.age >= r.life) { rings.splice(i, 1); continue; }
+            const f = r.age / r.life;
+            ctx.strokeStyle = 'rgba(165,180,252,' + ((1 - f) * (1 - f) * 0.7).toFixed(3) + ')';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(r.x, r.y, 6 + 30 * (1 - (1 - f) * (1 - f)), 0, 6.2832); ctx.stroke();
+          }
+          if (sparks.length || rings.length) raf = requestAnimationFrame(tick);
+          else { raf = 0; ctx.clearRect(0, 0, w, h); }
+        }
+        function kick() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
+
+        addEventListener('resize', resize);
+        resize();
+        addEventListener('pointerdown', (e) => {
+          if (e.pointerType !== 'mouse') return;
+          rings.push({ x: e.clientX, y: e.clientY, age: 0, life: 520 });
+          for (let j = 0; j < 14; j++) {
+            const a = rand(0, 6.2832), v = rand(1.2, 3.4);
+            spark(e.clientX, e.clientY, Math.cos(a) * v, Math.sin(a) * v, rand(480, 900), rand(1.6, 3.4));
+          }
+          kick();
+        });
+      })();
+
+      // Right click: a small menu of our own, so the cursor stays ours (the system menu always shows the
+      // plain arrow). It steps aside when text is selected, on form fields and with Shift held, so the
+      // system menu (Copy, Inspect...) is always one modifier away.
+      (function () {
+        const menu = document.getElementById('ctx');
+        if (!menu || matchMedia('(pointer: coarse)').matches) return;
+        const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+        let opener = null;
+        function close(refocus) {
+          if (menu.hidden) return;
+          menu.hidden = true;
+          if (refocus && opener && opener.focus) opener.focus();
+        }
+        function open(x, y) {
+          opener = document.activeElement;
+          const cp = menu.querySelector('[data-copy]');
+          cp.textContent = cp.dataset.label;
+          menu.hidden = false;
+          const r = menu.getBoundingClientRect();
+          menu.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
+          menu.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+          items[0].focus();
+        }
+        addEventListener('contextmenu', (e) => {
+          if (e.shiftKey || String(getSelection()).length || e.target.closest('input, textarea')) return;
+          if (menu.contains(e.target)) { e.preventDefault(); return; }
+          e.preventDefault();
+          open(e.clientX, e.clientY);
+        });
+        addEventListener('pointerdown', (e) => { if (!menu.hidden && !menu.contains(e.target)) close(false); });
+        addEventListener('keydown', (e) => {
+          if (menu.hidden) return;
+          if (e.key === 'Escape') { e.preventDefault(); close(true); }
+          else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const i = items.indexOf(document.activeElement);
+            const step = e.key === 'ArrowDown' ? 1 : -1;
+            items[(i + step + items.length) % items.length].focus();
+          }
+        });
+        addEventListener('scroll', () => close(false), { passive: true });
+        addEventListener('resize', () => close(false));
+        addEventListener('blur', () => close(false));
+        menu.addEventListener('click', (e) => {
+          const copy = e.target.closest('[data-copy]');
+          if (copy) {
+            navigator.clipboard.writeText(location.href).then(() => { copy.textContent = copy.dataset.copied; setTimeout(() => close(true), 650); }, () => close(true));
+            return;
+          }
+          close(false);
+        });
+      })();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  /* Self-hosted fonts (SIL OFL 1.1, latin subset): nothing is requested from Google. Licences in /fonts/. */
+  @font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 600; font-display: swap; src: url('/fonts/instrument-sans.woff2') format('woff2'); }
+  @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400 500; font-display: swap; src: url('/fonts/jetbrains-mono.woff2') format('woff2'); }
+  @font-face { font-family: 'Michroma'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/michroma.woff2') format('woff2'); }
+  :root {
+    --bg: #121316;
+    --sunken: #060607;
+    --ink: #f2f1ee;
+    --muted: rgba(242, 241, 238, 0.7);
+    --faint: rgba(242, 241, 238, 0.56);
+    --line: rgba(242, 241, 238, 0.15);
+    --line-strong: rgba(242, 241, 238, 0.4);
+    --accent: #6366f1;
+    --accent-ink: #a5b4fc;
+    --good: #3fd6b8;
+    --max: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  section[id] { scroll-margin-top: 88px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    cursor: url('/cursors/arrow-2.svg') 4 3, auto;
+  }
+  a, button, .ext { cursor: url('/cursors/link-2.svg') 4 3, pointer; }
+  input, textarea { cursor: url('/cursors/text.svg') 16 16, text; }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .faint { color: var(--faint); }
+  #fx { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  #ember { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+  .ctx { position: fixed; z-index: 10; min-width: 232px; padding: 6px; background: rgba(18, 19, 22, 0.97); border: 1px solid var(--line-strong); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55); font-size: 12px; letter-spacing: 0.04em; }
+  .ctx[hidden] { display: none; }
+  .ctx a, .ctx button { display: block; width: 100%; padding: 11px 12px; border: 0; background: transparent; color: var(--ink); font: inherit; letter-spacing: inherit; text-align: left; text-decoration: none; }
+  .ctx a:hover, .ctx button:hover, .ctx a:focus-visible, .ctx button:focus-visible { background: rgba(99, 102, 241, 0.22); outline: none; }
+  .bar, main, .foot { position: relative; z-index: 1; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+
+  .bar { border-bottom: 1px solid var(--line); background: rgba(18, 19, 22, 0.72); backdrop-filter: blur(6px); position: sticky; top: 0; z-index: 2; }
+  .bar-in { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; color: #fff; }
+  /* The wordmark is set in Michroma (SIL OFL), as in the logo. */
+  .word { font-family: 'Michroma', 'Instrument Sans', sans-serif; font-size: 19px; letter-spacing: 0.04em; }
+  .nav { display: flex; gap: 28px; align-items: center; font-size: 12px; letter-spacing: 0.04em; color: var(--muted); flex-wrap: wrap; }
+  .nav a { display: inline-block; padding: 8px 0; }
+  .nav a.outline { padding: 9px 14px; }
+  .nav a:hover { color: #fff; }
+  .outline { border: 1px solid var(--line-strong); padding: 9px 14px; color: var(--ink); }
+  .outline:hover { border-color: var(--ink); }
+
+  /* language menu: a globe and the language code, the list opens below */
+  .lang { position: relative; }
+  .lang summary { list-style: none; display: flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--line-strong); color: var(--ink); cursor: url('/cursors/link-2.svg') 4 3, pointer; user-select: none; }
+  .lang summary::-webkit-details-marker { display: none; }
+  .lang summary:hover, .lang[open] summary { border-color: var(--ink); }
+  .lang ul { position: absolute; right: 0; top: calc(100% + 6px); z-index: 3; min-width: 168px; margin: 0; padding: 6px; list-style: none; background: #121316; border: 1px solid var(--line-strong); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55); }
+  .lang li a { display: block; padding: 11px 12px; font-size: 13px; letter-spacing: 0.02em; color: var(--ink); }
+  .lang li a:hover, .lang li a:focus-visible { background: rgba(99, 102, 241, 0.22); outline: none; }
+  .lang li a[aria-current='true'] { color: var(--accent-ink); }
+
+  .hero { padding-top: 96px; padding-bottom: 72px; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.08em; color: var(--accent-ink); margin: 0 0 24px; }
+  h1 { margin: 0; font-size: clamp(44px, 7vw, 76px); line-height: 1.02; font-weight: 500; letter-spacing: -0.03em; color: #fff; max-width: 860px; }
+  h1 span { color: rgba(242, 241, 238, 0.5); }
+  /* The big mark in the hero: flame, wordmark and tagline. On wide screens it sits in the free space on the right,
+     above the third line of the title; on narrower ones it becomes a row above the text. */
+  html, body { overflow-x: clip; }
+  .hero { position: relative; }
+  .hero > *:not(.art) { position: relative; z-index: 1; }
+  .art { position: absolute; right: 24px; top: 8px; width: 300px; text-align: center; z-index: 0; }
+  .art .glow { position: absolute; left: 50%; top: 40%; width: 520px; height: 520px; transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%;
+               background: radial-gradient(closest-side, rgba(99,102,241,.22), rgba(99,102,241,.07) 55%, transparent 75%); }
+  .art .bigflame { position: relative; display: block; margin: 0 auto; filter: drop-shadow(0 0 28px rgba(99,102,241,.45)); }
+  .art .txt { position: relative; }
+  .art .aword { display: block; margin-top: 22px; font-family: 'Michroma', 'Instrument Sans', sans-serif; font-size: 30px; letter-spacing: 0.04em; color: #fff; }
+  .art .atag { display: block; margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.04em; color: var(--accent-ink); line-height: 1.5; }
+  @media (max-width: 1180px) {
+    .art { position: static; width: auto; text-align: left; margin: 0 0 28px; display: flex; align-items: center; gap: 18px; }
+    .art .glow { left: 40px; top: 50%; width: 260px; height: 260px; }
+    .art .bigflame { margin: 0; width: 64px; height: 96px; }
+    .art .aword { margin: 0; font-size: 22px; }
+    .art .atag { margin-top: 6px; }
+  }
+  .lead { margin: 28px 0 0; max-width: 560px; font-size: 19px; line-height: 1.55; color: var(--muted); }
+  .cta { display: flex; gap: 14px; margin-top: 36px; flex-wrap: wrap; align-items: center; }
+  .btn { font-size: 13px; letter-spacing: 0.04em; padding: 16px 26px; border: 1px solid transparent; }
+  .btn.solid { background: #fff; color: #0b0b0c; }
+  .btn.solid:hover { background: #e4e3ff; }
+  .btn.ghost { border-color: var(--line-strong); }
+  .btn.ghost:hover { border-color: var(--ink); }
+  .meta { font-size: 12px; color: var(--faint); }
+
+  /* every card lights up around the pointer */
+  .card { position: relative; background: rgba(18, 19, 22, 0.86); border: 1px solid var(--line); overflow: hidden; }
+  .card::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s; background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), rgba(99, 102, 241, 0.14), transparent 70%); }
+  .card:hover::before { opacity: 1; }
+
+  .window { margin-top: 72px; border-color: rgba(242, 241, 238, 0.3); }
+  .window-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--faint); }
+  .window-bar i { width: 10px; height: 10px; border-radius: 50%; background: #3a3b40; }
+  .window-bar span { margin-left: 12px; }
+  .window-body { padding: 28px; }
+  .drop { border: 1px dashed var(--accent); background: rgba(99, 102, 241, 0.09); padding: 28px; display: flex; gap: 28px; flex-wrap: wrap; align-items: center; }
+  .tile { width: 84px; height: 84px; border: 1.5px solid #e25252; background: rgba(226, 82, 82, 0.16); color: #f07070; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 18px; }
+  .drop-info { flex: 1 1 320px; }
+  .file { font-size: 18px; font-weight: 600; color: #fff; }
+  .path { font-size: 12px; color: var(--faint); margin-top: 6px; }
+  .path.to { margin: 22px 0 10px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+  .chips span { background: #fff; color: #0b0b0c; padding: 8px 12px; }
+  .chips.light span { background: var(--ink); font-size: 14px; padding: 10px 14px; }
+
+  .section { padding-top: 72px; padding-bottom: 24px; }
+  h2 { margin: 0; font-size: 34px; font-weight: 500; letter-spacing: -0.02em; color: #fff; }
+  .sub { margin: 10px 0 0; font-size: 16px; color: var(--muted); }
+  .exts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .ext { min-width: 92px; height: 52px; padding: 0 18px; background: transparent; color: var(--ink); border: 1px solid var(--line-strong); font: inherit; font-size: 15px; }
+  .ext:hover { border-color: var(--good); }
+  .ext[aria-pressed='true'] { background: var(--good); border-color: var(--good); color: #08201b; font-weight: 700; }
+  .result { margin-top: 24px; padding: 32px; display: flex; gap: 32px; flex-wrap: wrap; }
+  .result-l { flex: 1 1 200px; }
+  .result-r { flex: 3 1 420px; }
+  .label { font-size: 12px; letter-spacing: 0.06em; color: var(--faint); }
+  .picked { font-size: 40px; font-weight: 700; color: #fff; margin-top: 6px; }
+  .result-r .chips { margin-top: 12px; }
+  .done { margin: 22px 0 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+  .done strong { color: #fff; font-weight: 500; }
+
+  .head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .head span { font-size: 12px; }
+  .grid { display: flex; flex-wrap: wrap; border-left: 1px solid var(--line); }
+  .cell { flex: 1 1 320px; padding: 28px; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; }
+  .cell:hover { background: rgba(99, 102, 241, 0.05); }
+  .badge { width: 44px; height: 44px; border: 1.5px solid var(--c); color: color-mix(in srgb, var(--c) 72%, white); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .cell h3 { margin: 18px 0 6px; font-size: 20px; font-weight: 500; color: #fff; }
+  .cell p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
+  .soon { flex: 1 1 320px; padding: 28px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; justify-content: center; font-size: 12px; }
+  .soon p { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+  .note { margin: 18px 0 0; font-size: 15px; color: var(--muted); }
+
+  .band { margin-top: 72px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: rgba(6, 6, 7, 0.7); }
+  .band-in { padding-top: 64px; padding-bottom: 64px; display: flex; gap: 48px; flex-wrap: wrap; }
+  .band h2 { flex: 1 1 340px; line-height: 1.15; }
+  .band ul { flex: 1 1 400px; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; font-size: 16px; line-height: 1.55; color: var(--muted); }
+  .band li { display: flex; gap: 14px; }
+  .ok { color: var(--good); }
+  .warn { color: #f0b84a; }
+  .band .text { flex: 1 1 400px; display: flex; flex-direction: column; gap: 18px; font-size: 16px; line-height: 1.6; color: var(--muted); }
+  .band .text p { margin: 0; }
+  .text a, .checks a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .checks { list-style: none; margin: 28px 0 0; padding: 0; display: flex; flex-direction: column; gap: 16px; max-width: 760px; font-size: 16px; line-height: 1.55; color: var(--muted); }
+  .checks li { display: flex; gap: 14px; }
+
+  .get { padding: 48px; display: flex; gap: 32px; flex-wrap: wrap; align-items: center; justify-content: space-between; background: rgba(99, 102, 241, 0.08); border-color: var(--line-strong); }
+  .get > div:first-child { flex: 1 1 360px; max-width: 560px; }
+  .get .cta { margin-top: 0; }
+  .platforms { display: flex; flex-direction: column; gap: 14px; flex: 1 1 360px; max-width: 520px; }
+  .plat { padding: 22px 24px; border: 1px solid var(--line-strong); background: rgba(18, 19, 22, 0.55); }
+  .plat .small { margin-top: 12px; }
+  .plat-label { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 12px; letter-spacing: 0.06em; color: var(--ink); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .ok-dot { background: var(--good); box-shadow: 0 0 0 4px rgba(63, 214, 184, 0.16); }
+  .soonp { border-style: dashed; border-color: var(--line); background: transparent; }
+  .soonp .plat-label { color: var(--faint); }
+  .btn.off { color: var(--faint); border-color: var(--line); border-style: dashed; cursor: not-allowed; user-select: none; }
+  .btn.off:hover { border-color: var(--line); }
+  .small { margin: 14px 0 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
+  .small a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+  .sha { font-size: 12px; word-break: break-all; margin-top: 6px; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink); background: rgba(242, 241, 238, 0.08); padding: 1px 5px; }
+  em { font-style: normal; color: var(--ink); }
+
+  .foot { border-top: 1px solid var(--line); margin-top: 72px; background: rgba(18, 19, 22, 0.72); }
+  .foot-in { padding-top: 22px; padding-bottom: 22px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 12px; letter-spacing: 0.04em; color: var(--faint); }
+  .foot a { color: rgba(242, 241, 238, 0.85); text-decoration: underline; }
+
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; }
+
+  @media (max-width: 640px) {
+    .wrap { padding-left: 20px; padding-right: 20px; }
+    .hero { padding-top: 56px; }
+    .window-body, .drop, .result, .get { padding: 20px; }
+    .nav { gap: 4px 14px; }
+    .bar-in { height: auto; padding-top: 12px; padding-bottom: 12px; gap: 6px 16px; }
+    .nav a.outline, .lang summary { padding: 7px 10px; }
+    /* on a phone the globe sits at the top right, next to the logo; the links take the row below */
+    .lang { position: absolute; top: 16px; right: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .card::before { transition: none; }
+  }
+</style>

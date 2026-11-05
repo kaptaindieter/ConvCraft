@@ -1,0 +1,16 @@
+{
+  // Static site served from Cloudflare Workers assets; worker.js only redirects plain HTTP to HTTPS.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "voidflare",
+  "main": "worker.js",
+  // The account that holds the voidflare.app zone.
+  "account_id": "def348240939ac339c34e72c24471258",
+  "compatibility_date": "2026-10-30",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": true
+  },
+  "routes": [{ "pattern": "voidflare.app", "custom_domain": true }]
+}

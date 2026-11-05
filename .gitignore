@@ -1,0 +1,37 @@
+/target
+*.pdb
+**/*.rs.bk
+# the patched CADCraft engine build (60 MB); the patch is vendor/cadcraft-tilted-insert.patch
+/vendor/cadcraft/*.exe
+
+# Craft Suite Standard Exclusions
+target/
+node_modules/
+dist/
+engines/
+build/
+release/
+build-deps/
+.env
+.env.*
+*.local
+*.local.*
+config.local.json
+shared-ai-models.json
+shared-ai-config.json
+shared_custom_models.json
+cloud-config.json
+user-settings.json
+artcraft_theme.json
+*.log
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+
+# --- ArtCraft clean import: required ignore rules ---
+*.pfx
+*.pem
+*.zip
+*.dll
+

@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- Source of site/public/og.jpg (1200x630, link previews) and apple-touch-icon.png (180x180).
+     Render with Playwright: viewport 1200x630 and screenshot type jpeg; add ?icon for the 180x180 icon.
+     Everything important sits in the central 630x630 square, because WhatsApp crops previews to a square. -->
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Michroma&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: #121316; color: #f2f1ee; font-family: 'Instrument Sans', sans-serif;
+    background-image: radial-gradient(circle at 50% 46%, rgba(242,241,238,.09), transparent 360px), radial-gradient(rgba(242,241,238,.16) 1.4px, transparent 1.9px);
+    background-size: auto, 30px 30px; background-position: 0 0, 15px 15px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .frame { position: absolute; inset: 26px; border: 1px solid rgba(242,241,238,.22); }
+  svg { height: 168px; width: auto; }
+  .word { margin-top: 30px; font-family: 'Michroma', sans-serif; font-size: 70px; letter-spacing: .04em; color: #fff; line-height: 1; }
+  .tag { margin-top: 26px; font-size: 30px; color: rgba(242,241,238,.78); }
+  .tag .grad { font-weight: 500; background: linear-gradient(90deg, #8b5cf6, #6366f1 50%, #60a5fa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .mono { margin-top: 30px; font-family: 'JetBrains Mono', monospace; font-size: 17px; letter-spacing: .08em; color: #a5b4fc; }
+  body.icon { width: 180px; height: 180px; background-image: none; }
+  body.icon .frame, body.icon .word, body.icon .tag, body.icon .mono { display: none; }
+  body.icon svg { height: 120px; }
+</style></head>
+<body>
+<div class="frame"></div>
+<svg viewBox="19 3 64 96" aria-hidden="true"><path d="M50 98C31 98 20 85 22 69C24 55 34 47 38 35C40 27 38 16 43 4C49 15 58 22 61 34C62 40 61 45 64 49C68 43 68 37 66 30C78 43 82 58 80 71C78 87 67 98 50 98Z" fill="#6366f1"/><path d="M50 92C40 92 33 85 34 76C35 68 41 63 44 54C46 59 49 61 51 59C50 51 54 45 58 39C57 51 66 57 66 72C66 85 60 92 50 92Z" fill="#a5b4fc" transform="translate(7.5 13.8) scale(0.85)"/></svg>
+<div class="word">voidflare</div>
+<div class="tag"><span class="grad">Craft</span> your conversion, always offline</div>
+<div class="mono">DROP A FILE · PICK A FORMAT · NOTHING UPLOADED</div>
+<script>if (location.search.includes('icon')) document.body.className = 'icon';</script>
+</body></html>

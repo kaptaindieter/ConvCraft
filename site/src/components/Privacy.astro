@@ -1,0 +1,87 @@
+---
+import { STRINGS, LANGS, NATIVE, LOCALE, pagePath, type Lang } from '../i18n';
+import { fill } from '../lib/release';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = STRINGS[lang];
+const p = t.privacy;
+const url = 'https://voidflare.app' + pagePath(lang, 'privacy');
+const home = pagePath(lang, '');
+---
+<!doctype html>
+<html lang={lang} data-auto={lang === 'en' ? '' : undefined} data-page="privacy">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline src="/lang.js"></script>
+    <title>{p.title}</title>
+    <meta name="description" content={p.desc} />
+    <meta name="theme-color" content="#121316" />
+    <link rel="canonical" href={url} />
+    {LANGS.map((l) => <link rel="alternate" hreflang={l} href={'https://voidflare.app' + pagePath(l, 'privacy')} />)}
+    <link rel="alternate" hreflang="x-default" href="https://voidflare.app/privacy" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="voidflare" />
+    <meta property="og:locale" content={LOCALE[lang]} />
+    <meta property="og:title" content={p.title} />
+    <meta property="og:description" content={p.og} />
+    <meta property="og:url" content={url} />
+    <meta property="og:image" content="https://voidflare.app/og.jpg?v=2" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <style is:global>
+      @font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 600; font-display: swap; src: url('/fonts/instrument-sans.woff2') format('woff2'); }
+      :root { --ink: #f2f1ee; --muted: rgba(242, 241, 238, 0.74); --line: rgba(242, 241, 238, 0.15); }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #121316; color: var(--ink); font-family: 'Instrument Sans', system-ui, sans-serif; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+      .page { max-width: 720px; margin: 0 auto; padding: 56px 24px 96px; }
+      .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+      .back { display: inline-block; padding: 8px 0; font-family: ui-monospace, monospace; font-size: 12px; letter-spacing: 0.04em; color: var(--muted); text-decoration: none; }
+      .back:hover { color: #fff; }
+      .langs { display: flex; gap: 14px; flex-wrap: wrap; font-family: ui-monospace, monospace; font-size: 12px; letter-spacing: 0.04em; }
+      .langs a { color: var(--muted); text-decoration: none; padding: 8px 0; }
+      .langs a:hover { color: #fff; }
+      .langs a[aria-current='true'] { color: #a5b4fc; }
+      h1 { margin: 24px 0 8px; font-size: 40px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; color: #fff; }
+      h2 { margin: 44px 0 10px; padding-top: 28px; border-top: 1px solid var(--line); font-size: 22px; font-weight: 500; color: #fff; }
+      p, li { font-size: 16px; color: var(--muted); }
+      p { margin: 0 0 14px; }
+      ul { margin: 0 0 14px; padding-left: 22px; }
+      li { margin-bottom: 8px; }
+      a { color: var(--ink); text-underline-offset: 3px; }
+      code { font-family: ui-monospace, monospace; font-size: 14px; background: rgba(242, 241, 238, 0.08); padding: 1px 5px; }
+      .updated { font-family: ui-monospace, monospace; font-size: 12px; color: rgba(242, 241, 238, 0.56); }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="top">
+        <a class="back" href={home}>{p.back}</a>
+        <nav class="langs" aria-label={t.nav.lang}>
+          {LANGS.map((l) => <a href={pagePath(l, 'privacy')} lang={l} hreflang={l} data-lang={l} aria-current={l === lang ? 'true' : undefined}>{NATIVE[l]}</a>)}
+        </nav>
+      </div>
+      <h1>{p.h1}</h1>
+      <p class="updated">{p.updated}</p>
+
+      <p>{p.intro}</p>
+
+      <h2>{p.siteH}</h2>
+      <ul>{p.site.map((x) => <li set:html={fill(x)} />)}</ul>
+
+      <h2>{p.dlH}</h2>
+      <p set:html={fill(p.dl)} />
+
+      <h2>{p.progH}</h2>
+      <ul>{p.prog.map((x) => <li set:html={fill(x)} />)}</ul>
+
+      <h2>{p.rightsH}</h2>
+      <p>{p.rights}</p>
+
+      <h2>{p.contactH}</h2>
+      <ul>{p.contact.map((x) => <li set:html={fill(x)} />)}</ul>
+    </main>
+  </body>
+</html>
